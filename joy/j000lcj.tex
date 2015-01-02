@@ -1,0 +1,889 @@
+Received: from lurac1.latrobe.edu.au (lurac1.latrobe.edu.au [131.172.6.10])
+	by chiron.latrobe.edu.au (8.9.3/8.9.3) with ESMTP id RAA22066
+	for <philos@chiron.latrobe.edu.au>; Mon, 21 Feb 2000 17:15:29 +1100 (EST)
+From: PHIMVT@LURAC.LATROBE.EDU.AU
+Received: from LURAC.LATROBE.EDU.AU by LURAC.LATROBE.EDU.AU
+ (PMDF V5.2-31 #7143) id <01JM6DUP5JZK8WW9LE@LURAC.LATROBE.EDU.AU> for
+ philos@chiron.latrobe.edu.au; Mon, 21 Feb 2000 17:14:02 AUSTRALIA/VICTORIA
+Date: Mon, 21 Feb 2000 17:14:02 +0000 (AUSTRALIA/VICTORIA)
+Subject: 
+To: philos@chiron.latrobe.edu.au
+Message-id: <01JM6DUP5KXE8WW9LE@LURAC.LATROBE.EDU.AU>
+X-VMS-To: IN%"philos@chiron.latrobe.edu.au"
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+
+\documentstyle[11pt,a4page,myindex]{article}
+\pagestyle{headings}
+\title{\bf Lambda calculus vs. Combinatory Logic vs. Joy\\
+           --- a very very gentle introduction\\
+           (honest! I promise!)}
+\author{Manfred von Thun}
+\makeindex
+\input{MYMACRO.TEX}
+\longfalse
+\papertrue
+%
+\begin{document}
+\maketitle
+%
+\begin{abstract}
+Joy is a high-level purely functional programming language
+which is not based on the application of functions to several arguments
+but on the composition of unary functions.
+This paper introduces the motivation for Joy
+by contrasting it with with two other paradigms
+of functional programming: the lambda calculus and combinatory logic.
+The exposition is intended to be self-contained
+and does not presuppose prior acquaintance with the field.
+\end{abstract}
+%
+\begin{quote}
+{\bf Keywords:}
+functional languages, lambda calculus, elimination of variables,
+combinatory logic, elimination of function application,
+category theory, function composition, high level programming languages.
+\end{quote}
+%
+\tableofcontents
+%
+\section{Introduction -- functional languages}
+\par
+All natural languages and most artificial languages contain as a component
+a \BX{functional language}.
+This allows expressions to be built up from individual symbols
+together with functional symbols.
+In appropriate interpretations the expressions have a value which is
+an individual.
+Here are some examples of expressions on the left
+together with their values after the \verb#--># arrow:
+\begin{verbatim}
+    The capital of France                               -->  Paris
+    The country between Canada and Mexico               -->  U.S.A.
+    The sum of two and three                            -->  five
+    or:  2 + 3                                          -->  5
+\end{verbatim}
+\par
+Even statements can be considered to belong here,
+provided we take predicates to be functions which yield a truth value:
+\begin{verbatim}
+    Siberia is cold                                     -->  true
+    Italy is bigger than China                          -->  false
+\end{verbatim}
+\par
+In programming languages list are used extensively.
+In one notation the elements are written sequentially,
+enclosed in, say, square brackets \verb#[# and \verb#]#.
+Here are some functions for lists:
+\begin{verbatim}
+    The reverse of  [a b c]                             -->  [c b a]
+    The first of  [a b c]                               -->  a
+    The rest of  [a b c]                                -->  [b c]
+    The concatenation of [a b c] and [1 2 3]            -->  [a b c 1 2 3]
+\end{verbatim}
+\par
+It is highly desirable to have a uniform notation.
+In one common convention the function symbol is written first,
+followed by a parenthesised sequence of arguments or \BX{parameter}s
+separated by commas.
+Some of the earlier examples might be written:
+\begin{verbatim}
+    capital(France)                                     -->  Paris
+    sum(2,3)                                            -->  5
+    cold(Siberia)                                       -->  true
+    rest([a b c])                                       -->  [b c]
+    concat([a b c],[1 2 3])                             -->  [a b c 1 2 3]
+\end{verbatim}
+\par
+Functional expressions can be nested, and this includes statements:
+\begin{verbatim}
+    capital(between(Canada,Mexico))                     -->  Washington
+    product(sum(2,3),4)                                 -->  20
+    first(rest([a b c]))                                -->  b
+    conj(bigger(Italy,China),cold(Siberia))             -->  false
+\end{verbatim}
+\par
+New functions can be introduces by \BX{definition}s:
+\begin{verbatim}
+    maternal-grandfather(x)     =  father(mother(x))
+    square(x)                   =  product(x,x)
+    vixen(x)                    =  conj(fox(x),female(x))
+    second(x)                   =  first(rest(x))
+\end{verbatim}
+\par
+All the functions considered so far were \BX{first order} functions.
+They take individuals as parameters.
+Sometimes one needs \BX{higher order} functions,
+sometimes called functionals or \BX{combinator}s.
+These can take other functions as parameters.
+One example is the \JX{twice} function
+which takes as a parameter a unary functions and yields
+as a result another unary function.
+When the result is applied to something,
+the effect is the same as applying the original function two times.
+For example one might want to say that the
+paternal grandfather of \verb#William#
+is \verb#Philip#.
+Here is one attempt:
+\begin{verbatim}
+    twice(father(x))(William)                           -->  Philip
+\end{verbatim}
+But this does not make sense because the expression \verb#father(x)#
+firstly contains a free variable \verb#x#,
+and secondly at best denotes an individual, the \verb#father# of \verb#x#.
+Something else is needed.
+\par
+Another example of a second order function is the \JX{map} function
+which takes as parameters a unary function and a list.
+It yields as result a list of the same length,
+obtained by applying the function to each member of the given list.
+Here is an attempt:
+\begin{verbatim}
+    map(square(x),[1 2 3])                              -->  [1 4 9]
+\end{verbatim}
+Again the notation does not make sense because of the free \verb#x#.
+To handle higher order functions a different mechanism is needed,
+but what?
+\section{The lambda calculus}
+\par
+In set theory the many predicates of languages are replaced by
+expressions denoting sets.
+A few new formal predicates are introduced,
+principally one for membership.
+If \verb#Y# is a set,
+then the sentence \verb#"x is a member of Y"#
+is generally written $x \epsilon Y$.
+Expressions can be \BX{set abstraction}s such as
+\begin{verbatim}
+    {x : cold(x)}
+    {<x,y> : bigger(x,y)}
+\end{verbatim}
+If these two sets are called \verb#C# and \verb#B#,
+then the two statements \verb#Siberia# $\epsilon$ \verb#C#
+and \verb#<China,Italy># $\epsilon$ \verb#B# are true.
+\par
+In the lambda calculus something similar occurs.
+Functional expressions are built from variables and constants
+by just two constructions.
+\par
+One of these is \BX{lambda abstraction},
+which resembles set abstraction.
+If \verb#(..x..)# is an expression containing a variable,
+then its lambda abstraction is generally written $\lambda$\verb#x(..x..)#.
+To avoid Greek letters, though,
+I shall write \verb#Fun# instead of the lambda $\lambda$.
+Thus \verb#Fun x (..x..)# is to be pronounced
+"the function of one parameter \verb#x# which yields the result
+\verb#(..x..)#".
+Here is an example:
+\begin{verbatim}
+    Fun x (product(x,x))
+\end{verbatim}
+This is the function of one parameter which yields
+as value the product of the parameter with itself.
+This of course is the unary function which yields
+the \JX{square} of its argument.
+Another example:
+\begin{verbatim}
+    Fun x (father(mother(x))
+\end{verbatim}
+This of course is the maternal grandfather function.
+\par
+The other construction is \BX{application}
+which resembles membership in set theory.
+If \verb#f# is a function, then \verb#f @ a#
+is the result of applying the function to \verb#a#.
+Ordinary functional notation is abandoned now,
+and the {\em only} function used is
+application, written in infix notation.
+The earlier examples are rewritten like as follows.
+The first is pronounced
+"the application of the \verb#capital# function to \verb#France#",
+or more simply
+"\verb#capital# applied to \verb#France#".
+\begin{verbatim}
+    capital @ France                                    -->  Paris
+    between @ <Canada,Mexico>                           -->  U.S.A
+    cold @ Siberia                                      -->  true
+    first @ [a b c]                                     -->  a
+    first @ (rest @ (reverse @ [a b c d]))              -->  c
+\end{verbatim}
+The two earlier examples of abstraction should now be written
+\begin{verbatim}
+    maternal-grandfather  =  Fun x (father @ (mother @ x))
+    square                =  Fun x (product @ <x,x>)
+\end{verbatim}
+\par
+Functions of several parameters are still a nuisance because
+one has to write ordered pairs \verb#<x,y># or triples \verb#<x,y,z>#
+and so on:
+\begin{verbatim}
+    sum @ <2,3>                                         -->  5
+    between @ <Canada,Mexico>                           -->  U.S.A.
+\end{verbatim}
+By a device called \BX{currying}\footnote{
+Generally attributed to Curry, but freely acknowledged by
+him to be due to \AX{Sch\"{o}nfinkel}{1924}{Schoenfinkel:24}.
+The term "Sch\"{o}nfinkeling" never caught on.
+}
+all functions are taken to be unary, and one writes
+\begin{verbatim}
+    (sum  @  2)  @  3                                   -->  5
+\end{verbatim}
+where the subexpression
+\begin{verbatim}
+    sum  @  2
+\end{verbatim}
+is the \BX{curried} unary function of one parameter which adds 2 to its
+argument.
+When that unary function is applied to 3 it yields 5.
+If application is taken to be left-associative,
+the entire expression can be written without parentheses as
+\begin{verbatim}
+    sum  @  2  @  3                                     -->  5
+\end{verbatim}
+The definition of \verb#square# now looks like this:
+\begin{verbatim}
+    square                =  Fun x (product @ x @ x)
+\end{verbatim}
+\par
+Higher order functions can now be handled very naturally.
+Here are examples using \verb#twice#:
+\begin{verbatim}
+    twice @ father  @  William                          -->  Philip
+    twice @ rest  @  [a b c d e]                        -->  [c d e]
+    twice @ square  @  2                                -->  16
+\end{verbatim}
+Note that no parentheses are necessary here because
+\verb#twice# is being applied to a function.
+The last example might have been written without relying
+on the definition of \verb#square# as follows:
+\begin{verbatim}
+    twice  @  Fun x (product @ x @ x)   @   2           -->  16
+\end{verbatim}
+Of course \verb#twice# can be applied to a function
+which has been "\verb#twice#d" already:
+\begin{verbatim}
+    twice @ (twice @ rest)  @  [a b c d e f]            -->  [e f]
+    twice @ (twice @ square)  @  2                      -->  256
+\end{verbatim}
+\par
+The other example concerned \verb#map#,
+which might be written in two ways:
+\begin{verbatim}
+    map  @  square  @  [1 2 3]                          -->  [1 4 9]
+    map  @  Fun x (product @ x @ x)  @  [1 2 3]         -->  [1 4 9]
+\end{verbatim}
+In the first, the subexpression
+\begin{verbatim}
+    map  @  square
+\end{verbatim}
+is the curried unary function which,
+when applied to a list of numbers,
+produces the list of their \verb#square#s.
+Of course \verb#map# can be applied to a function which is already
+a mapping.
+The result has to be applied to a list of lists.
+\par
+The binary application operation is the only one written in infix notation,
+so it leads to no confusion if it is simply left out.
+This is generally done in the literature.
+Here are some of the examples written in this style:
+\begin{verbatim}
+    capital  France                                     -->  Paris
+    between  Canada  Mexico                             -->  U.S.A.
+    second-last           =   Fun x  (first  (rest  (reverse  x)))
+    paternal-grandfather  =   Fun x  (twice  father  x)
+\end{verbatim}
+\par
+The lambda calculus is an immensely powerful system.\footnote{
+It comes as a surprise that all \BX{computable function}s
+can be expressed in the lambda calculus with just variables, abstraction
+and application, and can then be computed by reduction.
+However,
+any efficient implementation will need constants,
+and all practical programming languages based
+on the lambda calculus provide them.
+The best known functional programming languages are
+\BX{Lisp} and its many earlier descendants,
+and the newer languages \BX{ML} and
+\BX{Miranda} {\tiny ("Miranda" is a trademark of Research Software Ltd)}.
+Being descendants of Lisp and ultimately the lambda calculus,
+they are also based on abstraction and application.
+}
+Its rules as a purely syntactic calculus have to do with simplifying
+expressions.\footnote{
+\AX{Peyton Jones}{1987 Chapter 2}{Peyton-Jones:87}
+contains a good exposition to the lambda calculus,
+including many extensions.
+The survey paper
+\AX{Hudak}{1989}{Hudak:89}
+compares many features of different functional languages,
+with a minor emphasis on \BX{Haskell}.
+A very elegant general introduction to modern functional programming
+in a non-Lisp language can be found in
+\AX{Hughes}{1990}{Hughes:90}.
+A recent introduction to Miranda
+is in
+\AX{Turner}{1990}{Turner:90}.
+A notable variation on the lambda calculus is described in
+\AX{Cartwright}{1991}{Cartwright:91}.
+}
+The few rules are deceptively simple but are in fact
+difficult to use correctly in real examples.
+The main difficulty arises from the variables which
+get in each others way.
+Their purpose is to steer arguments into the right position.
+Can one do without variables,
+to make things easier for people or for computers,
+and still steer arguments into the right position?
+\footnote{
+\AX{Brus {\it et al}}{1987 p 364}{Brus:87}
+write "if one wants to have a computational model
+for functional languages which is also close to their implementations,
+pure lambda calculus is not the obvious choice anymore".
+They present the language \BX{Clean} in which programs
+consist of rewrite rules (for graphs)
+using pattern matching extensively.
+}
+\section{Combinatory logic}
+\par
+Variables can indeed be eliminated completely,
+provided some appropriate higher order functions
+or \BX{combinator}s similar to \JX{twice} and \JX{map}
+are introduced.\footnote{
+\AX{Robinson}{1969 p 125}{Robinson:69}
+remarked:
+"whatever can be expressed in a language based on application
+{\em and} abstraction as fundamental notions
+can be expressed in a far simpler language
+{\em based on application alone}."
+The simpler language is \BX{combinatory logic}.
+It is not a way of doing logic in a combinatory way,
+but it deals with the logic of combinators
+which denote higher order functions.
+The key idea came from
+\AX{Sch\"{o}nfinkel}{1924}{Schoenfinkel:24}
+but was greatly expanded by Curry.
+The classic reference,
+\AX{Curry and Feys}{1958}{Curry:58}
+uses the same notation as is used today.
+A recent short exposition of the basic combinators is given for example in
+\AX{Henson}{1987}{Henson:87}.
+}
+\par
+One of the few immediately intuitive combinators is the
+\BX{W combinator}.
+Its effect is to create a replica of the argument supplied to the function.
+It may be defined as
+\begin{verbatim}
+    W  f  x         =   f  x  x
+\end{verbatim}
+Something like this can be used for the squaring function,
+or for other "self"-concepts:
+\begin{verbatim}
+    product  3  3                                       -->  9
+    W  product  3                                       -->  9
+    distance  Northpole  Equator                        -->  10000 km
+    W  distance  Northpole                              -->  0 km
+    square          =   W  product
+    self-destructs  =   W  destructs
+    narcicistic     =   W  loves
+\end{verbatim}
+Note that the last three definitions do not need a variable \verb#x#
+as a formal parameter.
+\par
+Another immediately intuitive combinator is the one
+which swaps arguments:
+\begin{verbatim}
+    C  f  x  y      =   f  y  x
+\end{verbatim}
+For example:
+\begin{verbatim}
+    smaller         =   C  bigger
+\end{verbatim}
+\par
+Neither \verb#W# nor \verb#C# are in any sense basic,
+but they can be defined in any complete combinatory logic.\footnote{
+The calculus of combinators can be understood without reference
+to its connection with the lambda calculus,
+as indeed it is done in many expositions.
+But for the present purposes it is best to keep
+in mind the goal of eliminating abstraction from the lambda calculus
+while retaining \BX{Turing completeness}.
+}
+Most such systems use as their basis a translation scheme from
+the lambda calculus to a combinatory calculus
+which only needs two combinators,
+the \BX{S combinator} and the \BX{K combinator}.\footnote{
+Abstraction is an operation in the \BX{object language},
+the lambda calculus.
+In combinatory logic this operation is replaced by
+an operation in the \BX{metalanguage}.
+This new operation is called \BX{bracket abstraction}.
+It takes an object language variable
+and an object language expression as arguments
+and it yields a new object language expression as value.
+The new expression will contain some function symbols
+specific to combinatory logic.
+If all object language lambda abstraction are removed from
+a lambda expression by this process of metalanguage bracket abstraction,
+then the final result will be equivalent to the original expression.
+So this process should be seen as a compilation.
+Since all lambda calculus expressions can be compiled in this manner,
+the language of combinators is again Turing complete.
+% The simple compilation scheme yields translations
+% whose length can be exponential
+% in the length of the source expression.
+% Optimisations have been known for a long time
+% which produce translations of only quadratic length.
+% These optimisations use further combinators that are
+% special cases of the \verb#S# combinator.
+% But the size of the translation result was still
+% prohibitive for any but the smallest lambda expressions.
+}
+They can be used to define all other combinators one might
+desire,
+or even on their own to eliminate variables and hence lambda abstractions
+\verb#Fun x (..x..)#.
+Even recursion can be handled with the "paradoxical" \BX{Y combinator}
+which is equivalent to a (hideous) expression just in \verb#S# and \verb#K#.
+\par
+Like the lambda calculus,
+combinatory logic has progressed from being
+a curiosity to being an industry.\footnote{
+\AX{Turner}{1979}{Turner:79}
+introduced some optimisations
+into the standard translator from lambda calculus
+to combinator notation.
+With these optimisations the size of the combinatory code
+was kept within an acceptable limit.
+Turner's implementation method using combinators has been used
+to build a hardware reduction machine,
+the \BX{CURRY chip}, see
+\AX{Ramsdell}{1986}{Ramsdell:86}.
+}
+\footnote{
+\AX{Peyton Jones}{1987 Chapter 16}{Peyton-Jones:87}
+contains a good exposition on the translation
+from the lambda calculus to combinators
+and many details of the implementation of Miranda.
+\AX{Hindley and Seldin}{1986}{Hindley-Seldin:86}
+provide a very complete parallel account
+of the lambda calculus, combinatory logic and their relationship.
+\AX{Robinson}{1969}{Robinson:69}
+shows how the language of Sch\"{o}nfinkel and Curry
+can be used in the mechanisation
+of theorem proving in higher order logic.
+\AX{Fradet and Le M\'{e}tayer}{1989}{Fradet-Metayer:89}
+show how to compile lambda calculus into conventional machine code.
+\AX{Fradet}{1991}{Fradet:91}
+uses what are described as low level indexed combinators
+as a target language to implement a lambda calculus language.
+Impressive execution times are reported.
+The target code is again not intended to be read by human users.
+Another way of supplying arguments to their values is with
+\BX{director strings}.
+used in some implementations of functional languages,
+(see for example
+\AX{Peyton Jones}{1987 p 274}{Peyton-Jones:87}).
+But it is unlikely that a high level programming
+language could be designed which uses these principles.
+}
+\par
+So we can do without abstraction but with application together
+with first and higher order functions.
+The resultant system is simpler,
+but it has never been proposed as a language for people to think in.
+\par
+In his Turing award lecture
+\AX{Backus}{1978}{Backus:78}
+introduced his \BX{FP system},
+short for "Functional Programming system".
+The system is not about programming using functions,
+as Lisp and its descendents are,
+but about programming with functionals,
+also known as higher order functions or
+combinators or, in his terminology, {\em functional forms}.
+These are operations on unary functions,
+they constitute a rich but unfamiliar algebra.
+Importantly, the arguments of the functions
+do not play any role at all.
+\footnote{
+Backus gives an elaborate axiomatisation of the algebra;
+in \AX{Williams}{1982}{Williams:82} a smaller version is given
+comprising just 11 axioms.
+The FP system is further explained and expanded in
+\AX{Williams}{1982}{Williams:82}.
+A very useful exposition to the FP systems is found in
+\AX{Henson}{1987 Chapter 5}{Henson:87}.
+The book also gives a very extensive bibliography.
+For a good exposition to the
+relation between the lambda calculus, combinatory logic
+and the FP systems of Backus see
+\AX{Revesz}{1988 section 5.3}{Revesz:88}.
+\AX{Givler and Kieburtz}{1984}{Givler:84}
+present methods for automatically and reliably
+transforming clear and correct
+but possibly inefficient FP programs
+into possibly obscure but efficient equivalent programs.
+\AX{Bellegarde}{1984}{Bellegarde:84}
+presents a set of convergent rewriting rules
+for the algebra of FP programs but without conditionals.
+Whereas FP is a \BX{strict} language,
+\AX{Dosch and M\"{o}ller}{1984}{Dosch:84}
+describe the algebraic semantics of a \BX{lenient} variant of FP
+allowing infinite objects
+and using both busy and lazy evaluation.
+\AX{Sheeran}{1984}{Sheeran:84}
+uses a variant of FP as a VLSI design language
+for describing semantics and physical layout of hardware.
+For a critique of the FP systems, see
+\AX{Harland}{1984 section 18.4}{Harland:84}.
+A recent descendant of the language FP by Backus
+is the \BX{FL language} described in
+\AX{Backus, Williams and Wimmers}{1990}{Backus-etal:90}.
+Another variant is the language \BX{GRAAL}
+which implements ("infinite") streams
+using call-by-need;
+it is described in
+\AX{Bellot and Robinet}{1985}{Bellot-Robinet:85}.
+}
+Backus acknowledges a dept to combinatory logic,
+but his aim was to produce a variable free notation
+that is amenable to simple algebraic manipulation by people.
+Such ease should produce clearer and more reliable programs.
+\par
+Backus also introduces another language,
+\BX{FFP system}, short for "Formal Functional Programming system".
+\footnote{
+In addition to objects as in FP there are now explicit expressions.
+In addition to the listforming constructor as in FP
+there is now a new binary constructor to form \BX{application}s
+consisting of an operator and an operand.
+Operator expressions which are atoms of course denote functions
+which can be applied to an argument.
+Operator expressions which are lists must have as their first
+element an expression denoting a function.
+This last rule, \BX{metacomposition}, is immensely powerful.
+It can be used to define arbitrary new functional forms,
+including of course the fixed forms from FP.
+The rule also makes it possible to compute recursive functions
+without a recursive definition.
+This is because in the application
+the functions is applied to a pair which includes the original
+list operand which in turn contains as its first element
+the expression denoting the very same function.
+The method is considerably simpler than the
+use of the \BX{Y combinator}.
+\AX{Williams}{1982}{Williams:82}
+extends the method to mutually recursive functions,
+even ones that are not \BX{primitive recursive}.
+Joy is in fact closer to FFP than any of the languages mentioned
+so far.
+Both replace abstraction by other mechanisms,
+both rely heavily on higher order functions,
+and both obey the principle that \BX{program = data}.
+Both permit construction of first order
+and higher order recursive and non-recursive functions
+without ever using named formal parameters.
+An effect similar to metacomposition
+is achieved in Joy with the \JX{x} combinator,
+which expects a quoted program on top of the stack
+and executes it without popping it off.
+}
+Both FP and FFP still use \BX{application}
+of functions to their arguments.
+But application, like membership in set theory,
+has no useful algebraic properties.
+\footnote{
+\AX{Meertens}{1989 p 72}{Meertens:89}
+speaks of
+"the need of a suitable system of combinators
+for making functions out of component functions
+without introducing extra names in the process.
+Composition should be the major method, and not application."
+He also writes (p 71)
+"The basic problem is that the basic operation of the classical combinator
+calculus (and also of the closely related lambda calculus)
+is application instead of composition.
+Application has not a single property.
+Function composition is associative
+and has an identity element
+(if one believes in the 'generic' identity function)."
+He develops a system of combining functions
+that is more suitable to formal manipulation
+than the classical combinators.
+}
+\section{Joy}
+\par
+Consider a long expression, here again written explicitly with
+the application operator \verb#@#:
+\begin{verbatim}
+    square @ (first @ (rest @ (reverse @ [1 2 3 4])))   -->  9
+\end{verbatim}
+All the functions are unary, and unary functions can be composed.
+The \BX{composition} of unary functions is again a unary function,
+and it can be applied like any other unary function.
+Let us write composition with an infix dot \verb#"."#.
+Then the composition of the four functions above is
+\begin{verbatim}
+    square . first . rest . reverse
+\end{verbatim}
+This can be applied to the original list:
+\begin{verbatim}
+    (square . first . rest . reverse)  @  [1 2 3 4]     -->  9
+\end{verbatim}
+One might even introduce definitions in this style:
+\begin{verbatim}
+    second          =   first . rest
+    second-last     =   second . reverse
+\end{verbatim}
+and then write
+\begin{verbatim}
+    (square . second-last)  @  [1 2 3 4]                -->  9
+\end{verbatim}
+This and also the preceding definitions would not make sense with
+application instead of composition.
+Importantly, a definition can be used to textually replace
+the {\em definiendum} by its {\em definiens}
+to obtain the original long composition expression.
+Unlike application,
+composition is semantically \BX{associative} ---
+no matter how the long expression is parenthesised,
+it denotes the same function.
+Furthermore, the textual operation of compounding several
+expressions to make a larger one is mapped onto the
+semantic operation of composing the functions denoted by the expressions.
+\par
+
+\par
+These are highly desirable properties for algebraic manipulation.
+The only trouble is that the resultant composition expression
+still has to be applied to an argument,
+the list \verb#[1 2 3 4]#.
+If we could elevate that list to the status of a function,
+we could eliminate application entirely from the expression
+and write
+\begin{verbatim}
+    square . first . rest . reverse . [1 2 3 4]         -->  9
+\end{verbatim}
+The numeral \verb#9# would also need to denote a function.
+Can this be done?
+\par
+Indeed it can be.
+In \BX{category theory} the usual constants such as numerals
+are taken to denote constant functions
+which return the same value no matter what the argument is.
+The language of \BX{Cartesian closed categories}
+\footnote{
+Cartesian closed categories are explained for example in
+\AX{Barr and Wells}{1990 Chapter 6}{Barr-Wells:90}
+and in
+\AX{Poigne}{1992}{Poigne:92}.
+Barr and Wells give an example of a simple lambda expression
+with variables and a complicated looking categorical equivalent formula.
+Category theory has given rise to another model of computation:
+the \BX{CAM} or \BX{Categorical Abstract Machine},
+described in
+\AX{Cousineau {\it et al}}{1985}{Cousineau-etal:85},
+\AX{Cousineau {\it et al}}{1987}{Cousineau-etal:87}
+and in
+\AX{Curien}{1986}{Curien:86}.
+The machine language of the CAM is very elegant,
+but programs in that language
+look as inscrutable as low level programs in other
+machine languages.
+The language is of course suitable as the target language
+for compilation from any functional language.
+A very compact but comprehensive exposition
+of a compiler from (a mini-) ML to CAM is described in
+\AX{Clement {\it et al}}{1986}{Clement:86}.
+\AX{Mauny and Su\'{a}rez}{1986}{Mauny:86}
+describe compilers from a strict and a nonstrict
+version of ML
+to an eager and a lazy version of the CAM.
+The original translation from lambda expressions
+to categorical combinators was quadratic in the worst case, but
+\AX{Lins}{1987}{Lins:87}
+introduces a linear translation to a simplified abstract machine code.
+\AX{Hannan}{1991}{Hannan:91}
+uses a variant of the CAM for generating more concrete
+code suitable for register-level implementation
+or even micro-coding on conventional architectures.
+An extension of ML for data-parallel computation has been implemented by
+\AX{Hains and Foisy}{1993}{Hains-Foisy:93}
+to run on a distributed version of the CAM.
+}
+is an alternative to the (typed) lambda calculus
+and to combinatory logic.
+However, this language has never been entertained
+as a high level language suitable for human reasoning.
+\par
+In the language Joy the functions are applied to a mystery object
+that is never mentioned explicitly,
+although it may but need not enter one's mind
+when reasoning about the composition expression
+or when manipulating it perhaps by a computer program.
+It would be useful if such manipulation could be expressed
+in the very same language.
+Only two changes are required for the notation.
+Firstly, the composition symbol dot \verb#"."#
+is the only infix operator, so it might as well be omitted:
+\begin{verbatim}
+    square  first  rest  reverse  [1 2 3 4]             -->  9
+\end{verbatim}
+Secondly, there is an advantage in reversing the composition notation
+so that we now write
+\begin{verbatim}
+    [1 2 3 4]  reverse  rest  first  square             -->  9
+\end{verbatim}
+\par
+Although the mystery object is never referred to in the functional
+expression, its nature has to be revealed when explaining the \BX{semantics}
+of the expressions.
+The mystery object is in fact a list of values,
+commonly called a \BX{stack}
+(because it is conceived to be organised vertically
+and the top elements are the most accessible).
+Literal numerals such as \verb#9#
+or literal lists denote unary functions
+which return a stack that is just like the argument stack
+except that the number or the list has been pushed on top.
+Other symbols like \verb#square# or \verb#reverse#
+denote functions which expect as argument a stack whose top element
+is a number or a list.
+They return the same stack except that the top element has been replaced by
+its square or its reversal.
+Symbols for what are normally binary operations
+also denote unary functions from stacks to stacks
+except that they replace the top two elements by a new single one.
+\par
+Stacks are used routinely in computing,
+one of their many uses is in evaluating expressions
+written in postfix notation.
+Joy is written in what superficially looks like postfix notation,
+but it is not.
+But what makes Joy unique is the large collection
+of \BX{combinator}s
+which minimise the need for users to introduce defined symbols.
+\section{A little tutorial}
+\par
+The following is a very brief introduction to Joy.
+\input{I01TUT.TEX}
+\par
+Two such general recursion combinators are \JX{linrec}
+and \JX{binrec} for computing
+\BX{linear recursion} and \BX{binary recursion}
+without having to introduce definitions.
+\par
+In the remainder of this section
+a small program is to be constructed
+which takes one sequence as parameter
+and returns the list of all \BX{permutation}s of that sequence.
+For example, the list of permutations of the string \verb#"abcd"# is
+\begin{verbatim}
+    ["abcd" "bacd" "bcad" "bcda" "acbd" "cabd" "cbad" "cbda"
+     "acdb" "cadb" "cdab" "cdba" "abdc" "badc" "bdac" "bdca"
+     "adbc" "dabc" "dbac" "dbca" "adcb" "dacb" "dcab" "dcba"]
+\end{verbatim}
+Here is a first draft:
+\begin{tabbing}
+9ssssssss\=   \kill
+1        \> If \= the sequence S has only zero or one member \\
+2        \>    \> then it has only one permutation, so take its unit list \\
+3        \>    \> else \= take the first of S and rest of S, \\
+         \>    \>      \> recurse to construct
+                              the permutations of the rest of S \\
+4        \>    \>      \> insert the first of S in all positions
+                              in all these permutations \\
+\end{tabbing}
+Step 4 can be elaborated like this:
+\begin{tabbing}
+9ssssssss\=   \kill
+4.1      \> Swap the saved first of S and the
+              list of permutations of the rest of S \\
+4.2      \> construct a program to insert something
+              in all positions in a sequence \\
+4.3      \> using the saved first of S for the insertion,
+              \verb#map# this over all permutations of the rest of S \\
+4.4      \> flatten this list of lists to become
+              a single list of their members \\
+\end{tabbing}
+After further elaborating step 4.2 extensively
+and step 4.4 in a small way,
+the entire program becomes:
+\begin{verbatim}
+1               [ small ]
+2               [ unitlist ]
+3               [ uncons ]
+4.1             [ swap
+4.2.1             [ swons
+4.2.2.1             [ small ]
+4.2.2.2             [ unitlist ]
+4.2.2.3             [ dup unswons [uncons] dip swons ]
+4.2.2.4             [ swap [swons] cons map cons ]
+4.2.2.5             linrec ]
+4.3               cons map
+4.4               [null] [] [uncons] [concat] linrec ]
+5               linrec.
+\end{verbatim}
+\par
+An essentially identical program is in the Joy library
+under the name \JX{permlist}.
+It is considerably shorter than the one given here
+because it uses two subsidiary programs \JX{insertlist}
+and \JX{flatten} which are useful elsewhere.
+The program given above is an example
+of a non-trivial program which uses
+the \JX{linrec} combinator three times
+and the \JX{map} combinator twice,
+with \BX{constructed program}s as parameters
+on both occasions.
+Of course such a program can be written
+in lambda calculus languages such
+as \BX{Lisp}, \BX{Scheme}, \BX{ML} or \BX{Miranda}.
+The following is a version in Scheme:
+\begin{verbatim}
+(define (permlist lis)
+    (define (flatten l)
+        (if (null? l)
+            l
+            (concat (car l) (flatten (cdr l))) ) )
+    (define (insertlist item lis)
+        (if (null? lis)
+            (unitlist (unitlist item))
+            (cons (cons item lis)
+                  (map (lambda (l) (cons (car lis) l))
+                       (insertlist item (cdr lis)) ) ) ) )
+    (if (small lis)
+        (unitlist lis)
+        (flatten
+            (map (lambda (l) (insertlist (car lis) l))
+                 (permlist (cdr lis)) ) ) ) )
+\end{verbatim}
+The Joy version uses 15 brackets and 25 names,
+a total of 40 symbols.
+The Scheme version uses 34 parentheses and 57 names,
+a total of 91 symbols.
+\par
+Various versions of Joy have been implemented several times.
+The current implementation is written in portable C.
+It is planned to keep Joy small and simple for as long as possible.
+Eventual behemothification is
+irresistible, inevitable, irresponsible and irreversible.\footnote{
+The unpublished paper
+\AX{von Thun}{1994}{J00LOV}
+contains an outline of various aspects of Joy
+and references to further working papers.
+}
+\newpage
+%
+\bibliographystyle{plain}
+\bibliography{mybibl}
+%
+\begin{theindex}
+\input{p00int.idxs}
+\end{theindex}
+%
+\end{document}

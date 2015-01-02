@@ -1,0 +1,47 @@
+
+From nickf@system-7.freeserve.co.uk Wed Jan 21 14:36:12 2004
+Date: Tue, 20 Jan 2004 20:20:07 +0000
+From: Nick Forde <nickf@system-7.freeserve.co.uk>
+To: Manfred von Thun <phimvt@LURAC.LATROBE.EDU.AU>
+Subject: [Fwd: Joy tarkit including Hans Boehm GC]
+
+Hi Manfred,
+
+Here's the email and tarkit I sent to Heiko. It includes version 6.2 of 
+the Boehm collector. Note there are a few 6.3alpha builds available at:
+
+http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/
+
+I only updated the make.gc file to include explicit references to the 
+gc6.2 directory.
+
+Regards,
+
+Nick.
+
+-------- Original Message --------
+Subject: Joy tarkit including Hans Boehm GC
+Date: Tue, 13 Jan 2004 21:15:46 +0000
+From: Nick Forde <nickf@system-7.freeserve.co.uk>
+To: Heiko.Kuhrt@t-online.de
+
+Hi Heiko,
+
+As I promised on concatenative, here's a tarkit of the
+latest Joy sources and Hans Boehm GC. I've only tested
+it on Linux but it should build OK on other platforms.
+To build simply try:
+
+$ gtar -zxvf joy-040113.tgz
+$ cd joy
+$ make -f make.gc
+
+Hope this helps. Have fun.
+
+Nick.
+
+
+
+  [Part 2, Application/X-COMPRESSED  1.1MB]
+  [Unable to print this part]
+
